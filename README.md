@@ -12,7 +12,7 @@ https://portaldocontribuinte.minfin.gov.ao/consultar-nif-do-contribuinte
 - Cache em memória de 5 minutos
 - Limite de pedidos por IP (30 pedidos a cada 15 minutos)
 - Resposta em JSON
-- CORS restrito a `localhost` e `127.0.0.1`
+- CORS restrito a `localhost` e `127.0.0.1` (ou às origens definidas em `CORS_ORIGINS`)
 
 ## Requisitos
 
@@ -65,6 +65,18 @@ API running on http://localhost:3000
 | Variável | Predefinição | Descrição                     |
 |----------|--------------|-------------------------------|
 | `PORT`   | `3000`       | Porta em que o servidor escuta |
+| `CORS_ORIGINS` | `http://localhost,http://localhost:3000,http://127.0.0.1,http://127.0.0.1:3000` | Origens permitidas para pedidos feitos a partir de browsers, separadas por vírgulas (ex.: `https://meu-site.ao,https://app.meu-site.ao`). Se definida, substitui a lista predefinida. |
+
+### Deploy no Render
+
+A pasta `dist/` não está no repositório (o `.gitignore` exclui `dist/` e `*.js`), por isso o Render tem de compilar o projeto antes de arrancar. Sem esse passo, aparece o erro `Cannot find module '.../dist/index.js'`.
+
+Configuração no Render:
+
+- **Build Command:** `npm install && npm run build`
+- **Start Command:** `npm start`
+
+Defina também as variáveis de ambiente (`PORT` é opcional, `CORS_ORIGINS` conforme necessário) em **Environment**.
 
 ## Como usar
 
@@ -139,7 +151,7 @@ Resposta:
 
 Cada pedido a `POST /query` passa pelos seguintes passos:
 
-1. **CORS** (`src/middleware/cors.ts`): só aceita pedidos de origens `localhost` e `127.0.0.1`, nas portas 80 ou 3000. Esta restrição aplica-se a pedidos feitos a partir de browsers; pedidos feitos com `curl` ou a partir de servidores não são afetados.
+1. **CORS** (`src/middleware/cors.ts`): só aceita pedidos de origens `localhost` e `127.0.0.1`, nas portas 80 ou 3000, ou as origens indicadas em `CORS_ORIGINS`. Esta restrição aplica-se a pedidos feitos a partir de browsers; pedidos feitos com `curl` ou a partir de servidores não são afetados.
 2. **Rate limit** (`src/middleware/rateLimit.ts`): aplicado apenas a `/query`, com limite de 30 pedidos por IP em janelas de 15 minutos.
 3. **Validação**: se `nif` não existir ou não for texto, responde com `400`.
 4. **Cache** (`src/services/cache.ts`): se o NIF (já normalizado) foi consultado nos últimos 5 minutos, devolve o resultado guardado e não abre o navegador.
