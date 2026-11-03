@@ -16,7 +16,7 @@ https://portaldocontribuinte.minfin.gov.ao/consultar-nif-do-contribuinte
 
 ## Requisitos
 
-- Node.js (versão LTS recente)
+- Node.js 22.17 ou superior (exigido pelo `@sparticuz/chromium`; está definido em `engines` no `package.json`)
 - npm
 - Espaço para o Chromium que o Puppeteer descarrega na instalação
 
@@ -77,6 +77,62 @@ Configuração no Render:
 - **Start Command:** `npm start`
 
 Defina também as variáveis de ambiente (`PORT` é opcional, `CORS_ORIGINS` conforme necessário) em **Environment**.
+
+Defina `NODE_ENV=production` (já está no `render.yaml`). É esta variável que faz a API usar o `@sparticuz/chromium` em vez do Chrome local do Puppeteer.
+
+#### Problemas resolvidos no deploy
+
+**1. `chromium.executablePath is not a function`**
+
+Todas as consultas falhavam com esta resposta:
+
+```json
+{
+  "success": false,
+  "message": "NIF not found or portal unavailable",
+  "error": "chromium.executablePath is not a function"
+}
+```
+
+Causas:
+
+- A partir da versão 153, o `@sparticuz/chromium` só é distribuído como módulo ESM. Como este projeto compila para CommonJS e o carrega com `require()`, as funções do pacote ficam dentro de `.default`. Por isso, `chromium.executablePath` era `undefined`.
+- O `puppeteer-core@21` era demasiado antigo para o Chromium 153.
+- O `@sparticuz/chromium` deixou de ter `chromium.headless` e `chromium.defaultViewport`, e passou a pedir `headless: "shell"`.
+
+Solução (em `src/services/nifService.ts` e `package.json`):
+
+```ts
+const chromium = require("@sparticuz/chromium").default;
+browser = await puppeteer.launch({
+  args: await puppeteer.defaultArgs({ args: chromium.args, headless: "shell" }),
+  executablePath: await chromium.executablePath(),
+  headless: "shell",
+});
+```
+
+- `puppeteer-core` atualizado para `^25.16.0`, a mesma versão do `puppeteer` usado localmente.
+- `"engines": { "node": ">=22.17.0" }` no `package.json`, para o Render usar uma versão de Node compatível com o `@sparticuz/chromium`.
+
+Ao atualizar o `@sparticuz/chromium` ou o `puppeteer-core`, mantenha as duas versões compatíveis. A versão principal do `@sparticuz/chromium` corresponde à versão do Chromium. Para saber que Chromium cada versão do Puppeteer suporta, veja https://pptr.dev/chromium-support.
+
+**2. `ERR_ERL_PERMISSIVE_TRUST_PROXY`**
+
+O log do Render mostrava:
+
+```
+ValidationError: The Express 'trust proxy' setting is true, which allows anyone to trivially bypass IP-based rate limiting.
+```
+
+Com `app.set("trust proxy", true)`, o Express confia em qualquer valor do cabeçalho `X-Forwarded-For`. Assim, qualquer pessoa podia inventar um IP e fugir ao limite de pedidos. O `express-rate-limit` deteta esta configuração e mostra o erro.
+
+Solução (em `index.ts`): confiar apenas no primeiro proxy, que no Render é o balanceador de carga.
+
+```ts
+app.set("trust proxy", 1);
+```
+
+Depois destas alterações, faça no Render **Manual Deploy → Clear build cache & deploy** para reinstalar as dependências do zero.
 
 ## Como usar
 
