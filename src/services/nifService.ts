@@ -1,4 +1,4 @@
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { NifData } from "../types";
 
 /**
@@ -15,12 +15,14 @@ export async function consultarNif(nif: string): Promise<NifData> {
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: chromium.executablePath(),
+      executablePath: await chromium.executablePath(),
       headless: chromium.headless,
     });
   } else {
-    // Localmente, usa o Puppeteer padrão
+    // Localmente, usa o Chrome do Puppeteer (via node_modules)
+    const { executablePath } = require("puppeteer");
     browser = await puppeteer.launch({
+      executablePath,
       headless: true,
       args: [
         "--no-sandbox",
@@ -84,7 +86,7 @@ export async function consultarNif(nif: string): Promise<NifData> {
           "div.form-group:nth-child(7) .col-sm-6:last-child label"
         ) || "",
       };
-    });
+    }) as unknown as NifData;
 
     // Validação básica
     if (!dados.name || !dados.nif) {
