@@ -5,8 +5,8 @@ import routes from "./src/routes";
 
 const app = express();
 
-// Trust proxy para rate-limit funcionar corretamente no Render
-app.set("trust proxy", true);
+// Trust proxy para rate-limit funcionar corretamente no Render (1 proxy à frente)
+app.set("trust proxy", 1);
 
 // CORS - allow only localhost
 app.use(corsMiddleware);

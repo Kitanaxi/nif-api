@@ -11,18 +11,18 @@ export async function consultarNif(nif: string): Promise<NifData> {
   
   if (isProduction) {
     // No Render/cloud, usa @sparticuz/chromium
-    const chromium = require("@sparticuz/chromium");
+    // O pacote é ESM-only: via require() os métodos ficam em .default
+    const chromium = require("@sparticuz/chromium").default;
     browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
+      args: await puppeteer.defaultArgs({ args: chromium.args, headless: "shell" }),
       executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      headless: "shell",
     });
   } else {
     // Localmente, usa o Chrome do Puppeteer (via node_modules)
     const { executablePath } = require("puppeteer");
     browser = await puppeteer.launch({
-      executablePath,
+      executablePath: executablePath(),
       headless: true,
       args: [
         "--no-sandbox",
