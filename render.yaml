@@ -2,5 +2,5 @@ services:
   - type: web
     name: nif-api
     env: node
-    buildCommand: npm install
+    buildCommand: npm install && npx puppeteer browsers install chrome
     startCommand: npm start
