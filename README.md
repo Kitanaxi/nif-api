@@ -20,7 +20,7 @@ https://portaldocontribuinte.minfin.gov.ao/consultar-nif-do-contribuinte
 - npm
 - Espaço para o Chromium que o Puppeteer descarrega na instalação
 
-## Instalação
+## Instalação     
 
 ```bash
 npm install
