@@ -5,14 +5,30 @@ import { NifData } from "../types";
  * Consulta NIF/BI no Portal do Contribuinte
  */
 export async function consultarNif(nif: string): Promise<NifData> {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-    ],
-  });
+  const isProduction = process.env.NODE_ENV === "production";
+  
+  let browser;
+  
+  if (isProduction) {
+    // No Render/cloud, usa @sparticuz/chromium
+    const chromium = require("@sparticuz/chromium");
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+  } else {
+    // Localmente, usa o Puppeteer padrão
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+      ],
+    });
+  }
 
   try {
     const page = await browser.newPage();

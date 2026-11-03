@@ -10,7 +10,7 @@ app.use(corsMiddleware);
 
 app.use(express.json());
 
-// Rate limiting by IP
+// Rate limiting by IP..
 app.use("/query", limiter);
 
 const PORT = process.env.PORT || 3000;
